@@ -1,8 +1,11 @@
 # JPNovaPatch
 
-escape-velocity.games/よりダウンロードできるEscape Velocity NovaのEV Nova.exeを改造し、<br>
-cp932にて2バイト文字をゲーム中で表示できるようにします。<br>
-Osakaフォントの導入をお勧めします。
+Windows版 Escape Velocity NovaのEV Nova.exeを改造し、<br>
+.rez内の文字列をcp932にて読み取り / 変換し、ゲーム中で表示できるようにします。<br>
+Osakaフォントの導入をお勧めします。<br>
+旧2chNovaスレにてボランティアの方々が作成された日本語化プラグインの再配布を目的としたプロジェクトではありません。<br>
+このパッチは自己責任にてご利用ください。<br>
+このパッチを使用したことによるいかなる不利益、損害についても当方は責任を負いません。<br>
 
 ## インストールと使い方
 .zip解凍後、JPNovaPatch.exeをパッチ対象のEV Nova.exeと同じ階層に配置したのちに実行してください。<br>
