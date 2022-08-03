@@ -1,117 +1,187 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
 
 namespace JPNovaPatch
 {
-    internal class FileFuncions : IDisposable
-    {
-        #region << Properties >>
+	internal class FileFuncions : IDisposable
+	{
+		#region << Fields >>
+		private FileStream _fsExe;
+		private BinEditor[] _binCheckers;
+		private BinEditor[] _binReplacers;
+		#endregion
 
-        private FileStream _fsExe;
+		internal FileFuncions(string fileName)
+		{
+			if (!File.Exists(fileName)) { throw new Exception(Consts.Strings.Cap_EX.ExeNotFound); }
 
-        private BinEditor _binInst;
+			if (!this._hasErrorInWrite()) { throw new IOException(Consts.Strings.Cap_EX.PermissionNothing); }
 
-        private List<BinEditor> _lBinEditor;
+			try
+			{
+				_fsExe = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite);
+			}
+			catch
+			{
+				throw;
+			}
 
-        private List<BinEditor> _lBinChecker;
-        #endregion
+			this._binCheckers = new[]
+			{
+				/* file header */
+				new BinEditor(Consts.Nums.CHECK_EXESTRUCT_FIRST, Consts.Bytes.CHECK_EXESTRUCT_FIRST, this._fsExe)
+				
+				/* "CP" */
+				, new BinEditor(Consts.Nums.CHECK_EXESTRUCT_CP, Consts.Bytes.CHECK_EXESTRUCT_CP, this._fsExe)
+			};
 
-        internal FileFuncions(string fileName)
-        {
-            try
-            {
-                if (!File.Exists(fileName)) { throw new Exception(Consts.Strings.Cap_Ex_ExeNotFound); }
+			this._binReplacers = new[]
+			{
+				/* liviconv charset_designator */
+				new BinEditor(Consts.Nums.OFFSET_LIBICONV, Consts.Bytes.LIBICONV_CHARSET_BEFORE
+					, Consts.Bytes.LIBICONV_CHARSET_AFTER, this._fsExe)
+				
+				/* reading data encode from .rez */
+				, new BinEditor(Consts.Nums.OFFSET_CONVERT_FROM, Consts.Bytes.TEXTENCODE_MacRoman
+					, Consts.Bytes.TEXTENCODE_CP932, this._fsExe)
+				
+				/* convert readed data from .rez */
+				, new BinEditor(Consts.Nums.OFFSET_CONVERT_TO, Consts.Bytes.TEXTENCODE_CP1252
+					, Consts.Bytes.TEXTENCODE_CP932, this._fsExe)
+				
+				/* font_designate left bottom label */
+				, new BinEditor(Consts.Nums.OFFSET_FONT_INGAME_LABEL, Consts.Bytes.FONT_Chicago
+					, Consts.Bytes.FONT_Meiryo, this._fsExe)
+				
+				/* font_designate playing dialogs */
+				, new BinEditor(Consts.Nums.OFFSET_FONT_DIALOGS, Consts.Bytes.FONT_Geneva
+					, Consts.Bytes.FONT_Osaka, this._fsExe)
+			};
+		}
 
-                /* = file open = */
-                _fsExe = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite);
+		internal bool IsBackupExists() => File.Exists(Consts.Strings.ExeName_bu);
 
-                this._lBinChecker = new List<BinEditor>();
-                this._lBinEditor = new List<BinEditor>();
+		internal void PatchFunctionMain()
+		{
+			bool isCreatedBackUp = false;
 
-                /* ===== checker ===== */
-                /* file header */
-                this._lBinChecker.Add(this._binInst = new BinEditor(
-                    Consts.Nums.CHECK_EXESTRUCT_FIRST, Consts.Bytes.CHECK_EXESTRUCT_FIRST, new byte[0], this._fsExe));
+			try
+			{
+				this._createBackUp();
+				isCreatedBackUp = true;
+				this._checkBinInFile();
+				this._writeBinToFile();
+			}
+			catch
+			{
+				if (isCreatedBackUp)
+				{
+					try
+					{
+						this._cleanUp(Consts.Strings.ExeName, Consts.Strings.ExeName_bu, Consts.Strings.ExeName);
+					}
+					catch(Exception e)
+					{
+						Console.WriteLine($" {e.Message}");
+						Console.WriteLine(Consts.Strings.Cap_EX.RecommendReinstall);
+					}
+				}
 
-                /* "CP" */
-                this._lBinChecker.Add(this._binInst = new BinEditor(
-                    Consts.Nums.CHECK_EXESTRUCT_CP, Consts.Bytes.CHECK_EXESTRUCT_CP, new byte[0], this._fsExe));
+				throw;
+			}
 
-                /* ===== replacer ===== */
-                /* liviconv charset_designator */
-                this._lBinEditor.Add(this._binInst = new BinEditor(
-                    Consts.Nums.OFFSET_LIBICONV, Consts.Bytes.LIBICONV_CHARSET_BEFORE, Consts.Bytes.LIBICONV_CHARSET_AFTER, this._fsExe));
+			return;
+		}
 
-                /* reading data encode from .rez */
-                this._lBinEditor.Add(this._binInst = new BinEditor(
-                    Consts.Nums.OFFSET_CONVERT_FROM, Consts.Bytes.TEXTENCODE_MacRoman, Consts.Bytes.TEXTENCODE_CP932, this._fsExe));
+		void _createBackUp()
+		{
+			try
+			{
+				File.Copy(Consts.Strings.ExeName, Consts.Strings.ExeName_bu, true);
+			}
+			catch
+			{
+				throw;
+			}
 
-                /* convert readed data from .rez */
-                this._lBinEditor.Add(this._binInst = new BinEditor(
-                    Consts.Nums.OFFSET_CONVERT_TO, Consts.Bytes.TEXTENCODE_CP1252, Consts.Bytes.TEXTENCODE_CP932, this._fsExe));
+			return;
+		}
 
-                /* font_designate left bottom label */
-                this._lBinEditor.Add(this._binInst = new BinEditor(
-                    Consts.Nums.OFFSET_FONT_INGAME_LABEL, Consts.Bytes.FONT_Chicago, Consts.Bytes.FONT_Meiryo, this._fsExe));
+		void _checkBinInFile()
+		{
+			try
+			{
+				foreach (var nBinChecker in this._binCheckers) { nBinChecker.CheckOffsetPosByte(); }
+			}
+			catch
+			{
+				throw;
+			}
 
-                /* font_designate playing dialogs */
-                this._lBinEditor.Add(this._binInst = new BinEditor(
-                    Consts.Nums.OFFSET_FONT_DIALOGS, Consts.Bytes.FONT_Geneva, Consts.Bytes.FONT_Osaka, this._fsExe));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
+			return;
+		}
 
-        internal void CreateBackUp()
-        {
-            try
-            {
-                File.Copy(Consts.Strings.ExeName, Consts.Strings.ExeName_bu, true);
-            }
-            catch(Exception)
-            {
-                throw;
-            }
+		void _writeBinToFile()
+		{
+			try
+			{
+				foreach (var nBinReplacer in this._binReplacers) { nBinReplacer.ReplaceBytes(); }
+			}
+			catch
+			{
+				throw;
+			}
 
-            return;
-        }
+			return;
+		}
 
-        internal void CheckBinInFile()
-        {
-            try
-            {
-                foreach (var nTmpBinInst in this._lBinChecker) { nTmpBinInst.CheckOffsetPosByte(); }
-            }
-            catch(Exception)
-            {
-                throw;
-            }
+		bool _hasErrorInWrite()
+		{
+			string guid;
 
-            return;
-        }
+			while (true)
+			{
+				guid = Guid.NewGuid().ToString();
+				if (!File.Exists(guid)) { break; }
+			}
 
-        internal void WriteBinToFile()
-        {
-            try
-            {
-                foreach (var nTmpBinInst in this._lBinEditor) { nTmpBinInst.ReplaceBytes(); }
-            }
-            catch(Exception)
-            {
-                throw;
-            }
+			try
+			{
+				File.Create(guid).Close();
+				File.Delete(guid);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($" {e.Message}");
+				return false;
+			}
 
-            return;
-        }
+			return true;
+		}
 
-        public void Dispose()
-        {
-            if (this._fsExe != null) { this._fsExe.Dispose(); }
+		 void _cleanUp(string deleteFileName, string renameFileName, string renameTo)
+		{
+			try
+			{
+				if (this._fsExe is not null) { this._fsExe.Dispose(); }
+				File.Delete(deleteFileName);
+				File.Move(renameFileName, renameTo);
+			}
+			catch
+			{
+				throw;
+			}
 
-            return;
-        }
-    }
+			return;
+		}
+
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+
+			if (this._fsExe is not null) { this._fsExe.Dispose(); }
+
+			return;
+		}
+	}
 }

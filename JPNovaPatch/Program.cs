@@ -1,83 +1,73 @@
 ﻿using System;
 using System.Text;
-using System.IO;
 
 namespace JPNovaPatch
 {
-    internal class Program
-    {
-        internal static void Main(string[] args)
-        {
-            FileFuncions funcInst;
+	internal class Program
+	{
+		internal static void Main(string[] args)
+		{
+			/* Designate console_output encoding */
+			Console.OutputEncoding = Encoding.UTF8;
 
-            /* Designate console_output encoding */
-            Console.OutputEncoding = Encoding.UTF8;
+			/* welcome... */
+			foreach (var nWelcome in Consts.Strings.Cap.Welcome) { Console.WriteLine(nWelcome); }
 
-            /* welcome... */
-            foreach (var nTmpStr in Consts.Strings.Cap_Welcome) { Console.WriteLine(nTmpStr); }
+			/* are you sure? */
+			foreach (var nAreYouSure in Consts.Strings.Cap.AreYouSure) { Console.WriteLine(nAreYouSure); }
 
-            /* are you sure? */
-            foreach (var nTmpStr in Consts.Strings.Cap_AreYouSure) { Console.WriteLine(nTmpStr); }
+			/* continue or exit with early return */
+			if (_userOperate() == Consts.UserInputs.Exit) { return; }
 
-            /* continue or exit with early return */
-            if (_userOperate() == Consts.UserInputs.Exit) { return; }
+			Console.WriteLine();
 
-            Console.WriteLine();
+			try
+			{
+				using (var funcInst = new FileFuncions(Consts.Strings.ExeName))
+				{
+					if(funcInst.IsBackupExists())
+					{
+						foreach (var nOverwrite in Consts.Strings.Cap.OverwriteBu) { Console.WriteLine(nOverwrite); }
+						if (_userOperate() == Consts.UserInputs.Exit) { return; }
+						Console.WriteLine();
+					}
 
-            try
-            {
-                using (funcInst = new FileFuncions(Consts.Strings.ExeName))
-                {
-                    funcInst.CreateBackUp();
-                    funcInst.CheckBinInFile();
-                    funcInst.WriteBinToFile();
-                }
+					funcInst.PatchFunctionMain();
+				}
 
-                /* patched. */
-                foreach (var nTmpStr in Consts.Strings.Cap_PatchCmpl) { Console.WriteLine(nTmpStr); }
-            }
-            catch (Exception e)
-            {
-                _cleanUp(Consts.Strings.ExeName, Consts.Strings.ExeName_bu, Consts.Strings.ExeName);
-                Console.WriteLine();
-                Console.WriteLine($" {e.Message}");
-                Console.WriteLine(Consts.Strings.Cap_Ex_CantContinue);
-            }
+				/* patched. */
+				foreach (var nTmpStr in Consts.Strings.Cap.PatchCmpl) { Console.WriteLine(nTmpStr); }
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine();
+				Console.WriteLine($" {e.Message}");
+				Console.WriteLine(Consts.Strings.Cap_EX.CantContinue);
+			}
 
-            Console.WriteLine();
-            Console.WriteLine(Consts.Strings.Cap_AnyKeyExit);
-            Console.ReadKey();
-            return;
-        }
+			Console.WriteLine();
+			Console.WriteLine(Consts.Strings.Cap.AnyKeyExit);
+			Console.ReadKey();
+			return;
+		}
 
-        private static Consts.UserInputs _userOperate()
-        {
-            while (true)
-            {
-                switch (Console.ReadKey().Key)
-                {
-                    case ConsoleKey.Y:
-                        return Consts.UserInputs.Continue;
+		static Consts.UserInputs _userOperate()
+		{
+			while (true)
+			{
+				switch (Console.ReadKey().Key)
+				{
+					case ConsoleKey.Y:
+						return Consts.UserInputs.Continue;
 
-                    case ConsoleKey.N:
-                        return Consts.UserInputs.Exit;
+					case ConsoleKey.N:
+						return Consts.UserInputs.Exit;
 
-                    default:
-                        Console.WriteLine(Consts.Strings.Cap_InputDesignateKey);
-                        break;
-                }
-            }
-        }
-
-        private static void _cleanUp(string deleteFileName, string renameFileName, string renameTo)
-        {
-            if(File.Exists(renameFileName) && File.Exists(deleteFileName))
-            {
-                File.Delete(deleteFileName);
-                File.Move(renameFileName, renameTo);
-            }
-
-            return;
-        }
-    }
+					default:
+						Console.WriteLine(Consts.Strings.Cap.InputDesignateKey);
+						break;
+				}
+			}
+		}
+	}
 }
