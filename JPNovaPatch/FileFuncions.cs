@@ -15,7 +15,7 @@ namespace JPNovaPatch
 		{
 			if (!File.Exists(fileName)) { throw new Exception(Consts.Strings.Cap_EX.ExeNotFound); }
 
-			if (!this._hasErrorInWrite()) { throw new IOException(Consts.Strings.Cap_EX.PermissionNothing); }
+			if (this._hasErrorInWrite()) { throw new IOException(Consts.Strings.Cap_EX.PermissionNothing); }
 
 			try
 			{
@@ -67,9 +67,9 @@ namespace JPNovaPatch
 
 			try
 			{
+				this._checkBinInFile();
 				this._createBackUp();
 				isCreatedBackUp = true;
-				this._checkBinInFile();
 				this._writeBinToFile();
 			}
 			catch
@@ -153,10 +153,10 @@ namespace JPNovaPatch
 			catch (Exception e)
 			{
 				Console.WriteLine($" {e.Message}");
-				return false;
+				return true;
 			}
 
-			return true;
+			return false;
 		}
 
 		 void _cleanUp(string deleteFileName, string renameFileName, string renameTo)
