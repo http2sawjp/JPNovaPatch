@@ -53,8 +53,8 @@
 				internal static readonly string PermissionNothing = $" ディレクトリ内のファイルを編集できません.";
 				internal static readonly string RecommendReinstall = $" パッチ作業中の致命的なエラーにより、ゲームの再インストールをお勧めします.";
 
-				internal static string UnmatchByte(long currentPos, byte expectB, byte currentB)
-					=> $" byte unmatch in offset pos[{currentPos}]\n Expected value is[{expectB}] but [{currentB} is detected.]";
+				internal static string UnmatchByte(long currentPos, string expect, string current)
+					=> $"Unexpected byte detected in offset pos[{currentPos}]\n Expected value: [{expect}], Detected value: [{current}].";
 			}
 		}
 
