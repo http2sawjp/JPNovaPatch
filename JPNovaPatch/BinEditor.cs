@@ -52,6 +52,7 @@ namespace JPNovaPatch
 		public void CheckOffsetPosByte()
 		{
 			byte currentByte;
+			Func<byte, string> toHex;
 
 			try
 			{
@@ -70,11 +71,13 @@ namespace JPNovaPatch
 
 						if (this._bPrevious[iCnt] != currentByte)
 						{
+							toHex = val => $"0x{val.ToString("X")}";
+
 							throw new UnmatchBytesException(
 								Consts.Strings.Cap_EX.UnmatchByte(
 									this._bReadTarget.BaseStream.Position
-									, _bPrevious[iCnt]
-									, currentByte
+									, toHex(_bPrevious[iCnt])
+									, toHex(currentByte)
 								)
 							);
 						}
