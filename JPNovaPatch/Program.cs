@@ -3,71 +3,50 @@ using System.Text;
 
 namespace JPNovaPatch
 {
+	using MessageType = Consts.Strings.Cap.MessageType;
+
 	internal class Program
 	{
-		internal static void Main(string[] args)
+		internal static void Main()
 		{
-			/* Designate console_output encoding */
-			Console.OutputEncoding = Encoding.UTF8;
-
-			/* welcome... */
-			foreach (var nWelcome in Consts.Strings.Cap.Welcome) { Console.WriteLine(nWelcome); }
-
-			/* are you sure? */
-			foreach (var nAreYouSure in Consts.Strings.Cap.AreYouSure) { Console.WriteLine(nAreYouSure); }
-
-			/* continue or exit with early return */
-			if (_userOperate() == Consts.UserInputs.Exit) { return; }
-
-			Console.WriteLine();
+			ViewNovaPatch viewInst = null;
+			FileFuncions funcInst = null;
+			Func<bool> userOperate;
 
 			try
 			{
-				using (var funcInst = new FileFuncions(Consts.Strings.ExeName))
+				viewInst = new(Encoding.UTF8);
+				userOperate = () => viewInst.isUserWantsExit();
+
+				viewInst.OutputMessage(MessageType.Welcome);
+				if ( viewInst.OutputMessage(MessageType.AreYouSure, userOperate))
+				{
+					return;
+				}
+
+				using (funcInst = new FileFuncions(Consts.Strings.ExeName))
 				{
 					if(funcInst.IsBackupExists())
 					{
-						foreach (var nOverwrite in Consts.Strings.Cap.OverwriteBu) { Console.WriteLine(nOverwrite); }
-						if (_userOperate() == Consts.UserInputs.Exit) { return; }
-						Console.WriteLine();
+						if(viewInst.OutputMessage(MessageType.OverWrite, userOperate))
+						{
+							return;
+						}
 					}
 
 					funcInst.PatchFunctionMain();
 				}
 
-				/* patched. */
-				foreach (var nTmpStr in Consts.Strings.Cap.PatchCmpl) { Console.WriteLine(nTmpStr); }
+				viewInst.OutputMessage(MessageType.Patched);
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine();
-				Console.WriteLine($" {e.Message}");
-				Console.WriteLine(Consts.Strings.Cap_EX.CantContinue);
+				ViewNovaPatch.Output($"{Consts.Strings.Cap_EX.ExceptionString(e)}");
 			}
 
-			Console.WriteLine();
-			Console.WriteLine(Consts.Strings.Cap.AnyKeyExit);
-			Console.ReadKey();
+			if (viewInst is not null) { viewInst.OutputMessage(MessageType.AnyKeyToExit); }
+			ViewNovaPatch.ReadKey();
 			return;
-		}
-
-		static Consts.UserInputs _userOperate()
-		{
-			while (true)
-			{
-				switch (Console.ReadKey().Key)
-				{
-					case ConsoleKey.Y:
-						return Consts.UserInputs.Continue;
-
-					case ConsoleKey.N:
-						return Consts.UserInputs.Exit;
-
-					default:
-						Console.WriteLine(Consts.Strings.Cap.InputDesignateKey);
-						break;
-				}
-			}
 		}
 	}
 }
